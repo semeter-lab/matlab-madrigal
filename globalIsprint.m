@@ -155,11 +155,11 @@ if strlength(format) == 0
 end
 
 % loop through each experiment
-for i = 1:length(expArray)
+for i = 1:height(expArray)
 
     % expName filter, if any
     if strlength(expName) > 0
-        result = regexpi(expArray(i).name, expName, 'once');
+        result = regexpi(expArray(i,:).name, expName, 'once');
         if isempty(result)
             continue;
         end
@@ -167,16 +167,16 @@ for i = 1:length(expArray)
 
     % excludeExpName filter, if any
     if strlength(excludeExpName) > 0
-        result = regexpi(expArray(i).name, excludeExpName, 'once');
+        result = regexpi(expArray(i,:).name, excludeExpName, 'once');
         if ~isempty(result)
             continue
         end
     end
 
      % for each experiment, find all default files
-     expFileArray = getExperimentFilesWeb(cgiurl, expArray(i).id, timeout);
-     for j = 1:length(expFileArray)
-         if (expFileArray(j).category ~= 1)
+     expFileArray = getExperimentFilesWeb(cgiurl, expArray(i,:).id, 2*timeout);
+     for j = 1:height(expFileArray)
+         if expFileArray(j,:).category ~= 1
              continue
          end
 
@@ -184,7 +184,7 @@ for i = 1:length(expArray)
          if ~isempty(kindats)
              okay = 0;
              for k = 1:length(kindats)
-                 if (expFileArray(j).kindat == kindats(k))
+                 if (expFileArray(j,:).kindat == kindats(k))
                      okay = 1;
                      break;
                  end
@@ -195,23 +195,23 @@ for i = 1:length(expArray)
          end
 
          % fileDesc filter, if any
-         if ~isempty(fileDesc)
-             result = regexpi(expFileArray(j).status, fileDesc, 'once');
+         if strlength(fileDesc) > 0
+             result = regexpi(expFileArray(j,:).status, fileDesc, 'once');
              if isempty(result)
                  continue;
              end
          end
 
-         fprintf(1, 'Working on file %s\n', expFileArray(j).name);
+         disp("Working on file " + expFileArray(j,:).name);
 
-         outputFile = getOutputFile(expFileArray(j).name, format, output);
+         outputFile = getOutputFile(expFileArray(j,:).name, format, output);
 
          % run isprintWeb
-         data = isprintWeb(cgiurl, expFileArray(j).name, parms, ...
+         data = isprintWeb(cgiurl, expFileArray(j,:).name, parms, ...
                            user_fullname, user_email, user_affiliation, ...
                            filters, outputFile);
          if (data == -1)
-             disp(strcat('Skipping ', expFileArray(j).name));
+             disp("Skipping " + expFileArray(j,:).name)
              continue
          end
 

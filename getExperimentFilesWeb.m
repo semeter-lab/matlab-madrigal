@@ -32,7 +32,7 @@ function expFileArray = getExperimentFilesWeb(cgiurl, experimentId, timeout)
 arguments
     cgiurl (1,1) string
     experimentId (1,1) {mustBeInteger}
-    timeout (1,1) {mustBePositive} = 15.0
+    timeout (1,1) {mustBePositive} = 60.0
 end
 
 if experimentId == -1
@@ -68,7 +68,8 @@ end
 % parse result
 
 % init array to return
-expFileArray = struct();
+expFileArray = table();
+j = 0;
 
 lines = split(string(result), newline);
 % loop through each line
@@ -76,6 +77,7 @@ for i = 1:length(lines)
     if strlength(lines(i)) < 10
         continue
     end
+    j = j+1;
 
     line = split(lines(i), ",");
     % name
@@ -91,14 +93,14 @@ for i = 1:length(lines)
     % permission
     newExperimentFile.permission = str2double(line(6));
     % doi
-    if length(commaMarks) >= 6
+    if length(line) >= 6
         newExperimentFile.doi = line(7);
     else
         newExperimentFile.doi = 'None';
     end
 
     % append new experiments
-    expFileArray(i) = newExperimentFile;
+    expFileArray(j,:) = struct2table(newExperimentFile);
 end
 
 end

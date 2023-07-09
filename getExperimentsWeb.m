@@ -128,7 +128,8 @@ end
 
 %% parse result
 % init array to return
-expArray = [];
+expArray = table();
+j = 0;
 
 lines = split(string(result), newline);
 % loop through each line
@@ -136,6 +137,7 @@ for i = 1:length(lines)
     if strlength(lines(i)) < 10
         continue
     end
+    j = j+1;
     line = split(lines(i), ",");
     % id
     newExperiment.id = str2double(line(1));
@@ -163,9 +165,9 @@ for i = 1:length(lines)
     end
 
     newExperiment.madrigalUrl = 'unknown';
-    for i = 1:2:length(siteDict)+1
-        if siteDict{i} == newExperiment.siteid
-            newExperiment.madrigalUrl = siteDict{i+1};
+    for k = 1:2:length(siteDict)+1
+        if siteDict{k} == newExperiment.siteid
+            newExperiment.madrigalUrl = siteDict{k+1};
             break
         end
     end
@@ -189,7 +191,7 @@ for i = 1:length(lines)
     newExperiment.realUrl = realUrl + "&displayLevel=0&expTitle=" + title;
 
     % append new experiments
-    expArray = [expArray newExperiment];
+    expArray(j,:) = struct2table(newExperiment);
 
 % now sort the array based on
 % http://blogs.mathworks.com/pick/2010/09/17/sorting-structure-arrays-based-on-fields/
@@ -201,5 +203,7 @@ for i = 1:length(lines)
 % expArrayCell = sortrows(expArrayCell, 8);
 % expArrayCell = reshape(expArrayCell', sz);
 % expArray = cell2struct(expArrayCell, expArrayFields, 1);
+
+end
 
 end
