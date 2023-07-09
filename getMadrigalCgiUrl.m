@@ -18,8 +18,7 @@ if ~any(endsWith(url, ["/", "index.html"]))
   url = url + "/";
 end
 
-these_options = weboptions(Timeout=timeout, ContentType="text");
-pagedata = webread(url, these_options);
+pagedata = webread(url, weboptions(Timeout=timeout, ContentType="text"));
 
 % get host name
 if startsWith(url, "http://")

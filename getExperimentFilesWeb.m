@@ -1,4 +1,4 @@
-function expFileArray = getExperimentFilesWeb(cgiurl, experimentId)
+function expFileArray = getExperimentFilesWeb(cgiurl, experimentId, timeout)
 %  getExperimentFilesWeb  	returns an array of experiment file structs given experiment id from a remote Madrigal server.
 %
 %  Note that it is assumed that experiment is local to cgiurl.  If not,
@@ -29,106 +29,76 @@ function expFileArray = getExperimentFilesWeb(cgiurl, experimentId)
 %
 %  Example: expFileArray =
 %  getExperimentFilesWeb('http://madrigal.haystack.mit.edu/cgi-bin/madrigal/', 10001686);
-
-% check input arguments
-if (~isnumeric(experimentId))
-    err.message = 'experimentId must be integer';
-    err.identifier = 'madmatlab:badArguments';
-    rethrow(err);
+arguments
+    cgiurl (1,1) string
+    experimentId (1,1) {mustBeInteger}
+    timeout (1,1) {mustBePositive} = 15.0
 end
 
-if (experimentId == -1)
-    err.message = 'Invalid experiment id.  This is usually caused by calling getExperimentsWeb for a non-local experiment.  You need to make a second call to getExperimentsWeb with the cgiurl of the non-local experiment (getCgiurlForExperiment(experiment.url))';
-    err.identifier = 'madmatlab:badArguments';
-    rethrow(err);
-end
-
-dims = size(experimentId);
-if (dims(1) ~= 1 | dims(2) ~= 1)
-    err.message = 'experimentId must be integer';
-    err.identifier = 'madmatlab:badArguments';
-    rethrow(err);
-end
-
-if (nargin ~= 2)
-    err.message = 'usage: getExperimentFilesWeb(cgiurl, experimentId)';
-    err.identifier = 'madmatlab:badArguments';
-    rethrow(err);
+if experimentId == -1
+    error('madmatlab:badArguments', 'Invalid experiment id.  This is usually caused by calling getExperimentsWeb for a non-local experiment.  You need to make a second call to getExperimentsWeb with the cgiurl of the non-local experiment (getCgiurlForExperiment(experiment.url))')
 end
 
 % build the complete cgi url
-if (cgiurl(end) == '/')
-    cgiurl = strcat(cgiurl, 'getExperimentFilesService.py?');
+if endsWith(cgiurl, "/")
+    cgiurl = cgiurl + "getExperimentFilesService.py?";
 else
-    cgiurl = strcat(cgiurl, '/getExperimentFilesService.py?');
+    cgiurl = cgiurl + "/getExperimentFilesService.py?";
 end
 
 
 % append id
-[temp  errmsp] = sprintf('id=%s', num2str(experimentId));
-cgiurl = strcat(cgiurl, temp);
+cgiurl = cgiurl + sprintf("id=%s", int2str(experimentId));
 
 % make sure any + replaced by %2B
-cgiurl = strrep(cgiurl,'+','%2B');
+cgiurl = strrep(cgiurl, "+", "%2B");
 
 % now get that url
-these_options = weboptions('Timeout',300, 'ContentType', 'text');
-result = webread(cgiurl, these_options);
+disp(cgiurl)
+result = webread(cgiurl, weboptions(Timeout=timeout, ContentType='text'));
 
 % look for errors - if html returned, error occurred
-htmlList = strfind(result, '</html>');
-if (~isempty(htmlList))
-    err.message = strcat('Unable to run cgi script getExperimentFilesWeb using cgiurl: - ', cgiurl);
-    err.identifier = 'madmatlab:scriptError';
-    rethrow(err);
+if contains(result, "</html>")
+    error('madmatlab:scriptError', 'Unable to run cgi script getExperimentFilesWeb using cgiurl: %s ', cgiurl)
 end
 
 % surpress matlab warning about multibyte Characters
-warning off REGEXP:multibyteCharacters
-
-result = sprintf('%s\n', result);
+% warning off REGEXP:multibyteCharacters
 
 % parse result
-lineMarks = regexp(result, '\n');
 
 % init array to return
-expFileArray = [];
+expFileArray = struct();
+
+lines = split(string(result), newline);
 % loop through each line
-for line = 1:length(lineMarks)
-    if line == 1
-        thisLine = result(1:lineMarks(line));
-    else
-         thisLine = result(lineMarks(line-1):lineMarks(line));
-    end
-    if length(thisLine) < 10
+for i = 1:length(lines)
+    if strlength(lines(i)) < 10
         continue
     end
-    commaMarks = strfind(thisLine, ',');
+
+    line = split(lines(i), ",");
     % name
-    newExperimentFile.name = strtrim(thisLine(1:commaMarks(1)-1));
+    newExperimentFile.name = strtrim(line(1));
     % kindat
-    newExperimentFile.kindat = str2num(thisLine(commaMarks(1)+1:commaMarks(2)-1));
+    newExperimentFile.kindat = str2double(line(2));
     % kindatdesc
-    newExperimentFile.kindatdesc = thisLine(commaMarks(2)+1:commaMarks(3)-1);
+    newExperimentFile.kindatdesc = line(3);
     % category
-    newExperimentFile.category = str2num(thisLine(commaMarks(3)+1:commaMarks(4)-1));
+    newExperimentFile.category = str2double(line(4));
     % status
-    newExperimentFile.status = thisLine(commaMarks(4)+1:commaMarks(5)-1);
+    newExperimentFile.status = line(5);
     % permission
-    if length(commaMarks) > 5
-        newExperimentFile.permission = str2num(thisLine(commaMarks(5)+1:commaMarks(6)-1));
-    else
-        newExperimentFile.permission = str2num(thisLine(commaMarks(5)+1:end));
-    end
+    newExperimentFile.permission = str2double(line(6));
     % doi
-    if length(commaMarks) > 6
-        newExperimentFile.doi = thisLine(commaMarks(6)+1:commaMarks(7)-1);
-    elseif length(commaMarks) == 6
-        newExperimentFile.doi = thisLine(commaMarks(6)+1:end);
+    if length(commaMarks) >= 6
+        newExperimentFile.doi = line(7);
     else
         newExperimentFile.doi = 'None';
     end
 
     % append new experiments
-    expFileArray = [expFileArray newExperimentFile];
+    expFileArray(i) = newExperimentFile;
+end
+
 end

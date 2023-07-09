@@ -64,9 +64,8 @@ end
 siteDict = {};
 siteUrl = cgiurl + "/getMetadata?fileType=5";
 % now get that url
-these_options = weboptions('Timeout',timeout, 'ContentType', 'text');
 disp(siteUrl)
-result = webread(siteUrl, these_options);
+result = webread(siteUrl, weboptions('Timeout',timeout, 'ContentType', 'text'));
 
 % surpress matlab warning about multibyte Characters
 %warning off REGEXP:multibyteCharacters

@@ -174,7 +174,7 @@ for i = 1:length(expArray)
     end
 
      % for each experiment, find all default files
-     expFileArray = getExperimentFilesWeb(cgiurl, expArray(i).id);
+     expFileArray = getExperimentFilesWeb(cgiurl, expArray(i).id, timeout);
      for j = 1:length(expFileArray)
          if (expFileArray(j).category ~= 1)
              continue
