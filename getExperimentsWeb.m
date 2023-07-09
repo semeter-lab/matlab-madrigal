@@ -68,33 +68,22 @@ these_options = weboptions('Timeout',timeout, 'ContentType', 'text');
 result = webread(siteUrl, these_options);
 
 % surpress matlab warning about multibyte Characters
-warning off REGEXP:multibyteCharacters
-
-result = sprintf('%s\n', result);
+%warning off REGEXP:multibyteCharacters
 
 % parse site result
-lineMarks = regexp(result, '\n');
+lines = split(string(result), newline);
 
-% loop through each line
-for line = 1:length(lineMarks)
-    if line == 1
-        thisLine = result(1:lineMarks(line));
-    else
-         thisLine = result(lineMarks(line-1):lineMarks(line));
-    end
-    if length(thisLine) < 10
+%% loop through each line
+for i = 1:length(lines)
+    if strlength(lines(i)) < 10
         continue
     end
-    commaMarks = strfind(thisLine, ',');
+    dat = split(lines(i), ",");
 
-    % id
-    id = str2double(thisLine(1:commaMarks(1)-1));
-    % name
-    % name = thisLine(commaMarks(1)+1:commaMarks(2)-1);
-    % url
-    url = thisLine(commaMarks(2)+1:commaMarks(3)-1);
-    % url2
-    url2 = thisLine(commaMarks(3)+1:commaMarks(4)-1);
+    id = str2double(dat(1));
+    % name = dat(2);
+    url = dat(3);
+    url2 = dat(4);
 
     % append new data
     siteDict = [ siteDict {id, "http://" + url + "/" + url2 }];
@@ -102,7 +91,7 @@ end
 
 
 % build the complete cgi url
-cgiurl = strcat(cgiurl, 'getExperimentsService.py?');
+cgiurl = cgiurl + "getExperimentsService.py?";
 
 
 % append --code options
@@ -110,43 +99,31 @@ for i = 1:length(instCodeArray)
     cgiurl = cgiurl + sprintf('code=%i&', instCodeArray(i));
 end
 
-% append start time
-startTimeVec = datevec(starttime);
-cgiurl = cgiurl + sprintf('startyear=%i&', startTimeVec(1));
-cgiurl = cgiurl + sprintf('startmonth=%i&', startTimeVec(2));
-cgiurl = cgiurl + sprintf('startday=%i&', startTimeVec(3));
-cgiurl = cgiurl + sprintf('starthour=%i&', startTimeVec(4));
-cgiurl = cgiurl + sprintf('startmin=%i&', startTimeVec(5));
-cgiurl = cgiurl + sprintf('startsec=%i&', round(startTimeVec(6)));
-
-% append end time
-endTimeVec = datevec(endtime);
-cgiurl = cgiurl + sprintf('endyear=%i&', endTimeVec(1));
-cgiurl = cgiurl + sprintf('endmonth=%i&', endTimeVec(2));
-cgiurl = cgiurl + sprintf('endday=%i&', endTimeVec(3));
-cgiurl = cgiurl + sprintf('endhour=%i&', endTimeVec(4));
-cgiurl = cgiurl + sprintf('endmin=%i&', endTimeVec(5));
-cgiurl = cgiurl + sprintf('endsec=%i&', round(endTimeVec(6)));
+% append start / end time
+cgiurl = cgiurl + sprintf('startyear=%i&startmonth=%i&startday=%i&starthour=%i&startmin=%i&startsec=%i&endyear=%i&endmonth=%i&endday=%i&endhour=%i&endmin=%i&endsec=%i&', ...
+    starttime.Year, starttime.Month, starttime.Day, ...
+    starttime.Hour, starttime.Minute, round(starttime.Second), ...
+    endtime.Year, endtime.Month, endtime.Day,...
+    endtime.Hour, endtime.Minute, round(endtime.Second));
 
 % append localFlag
+cgiurl = cgiurl + "local=";
 if localFlag == 0
-    cgiurl = cgiurl + "local=0";
+    cgiurl = cgiurl + "0";
 else
-    cgiurl = cgiurl + "local=1";
+    cgiurl = cgiurl + "1";
 end
 
 % make sure any + replaced by %2B
-cgiurl = strrep(cgiurl,'+','%2B');
+cgiurl = strrep(cgiurl, "+", "%2B");
 
 % now get that url
 result = webread(cgiurl);
 
 % look for errors - if html returned, error occurred
-if contains(result, '</html>')
+if strlength(result) == 0 || contains(result, "</html>")
     error('madmatlab:scriptError', "Unable to run cgi script getExperimentsWeb using cgiurl: %s ", cgiurl)
 end
-
-result = sprintf('%s\n', result);
 
 % parse result
 lineMarks = regexp(result, '\n');
