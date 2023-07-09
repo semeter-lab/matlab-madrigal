@@ -1,4 +1,4 @@
-function expArray = getExperimentsWeb(cgiurl, instCodeArray, starttime, endtime, localFlag)
+function expArray = getExperimentsWeb(cgiurl, instCodeArray, starttime, endtime, localFlag, timeout)
 %  getExperimentsWeb  	returns an array of experiment structs given input filter arguments from a remote Madrigal server.
 %
 %  Inputs:
@@ -49,34 +49,22 @@ function expArray = getExperimentsWeb(cgiurl, instCodeArray, starttime, endtime,
 %   while Madrigal sites share metadata about experiments, the real experiment ids are only
 %   known by the individual Madrigal sites.  See testMadmatlab.m
 %   for an example of this.
-
-% check input arguments
-if (~isnumeric(instCodeArray))
-    err.message = 'second argument to getExperimentsWeb must be 1 x N array of ints - use 0 for all instruments';
-    err.identifier = 'madmatlab:badArguments';
-    rethrow(err);
-end
-
-dims = size(instCodeArray);
-if (dims(1) ~= 1 | dims(2) < 1)
-    err.message = 'second argument to getExperimentsWeb must be 1 x N array of ints - use 0 for all instruments';
-    err.identifier = 'madmatlab:badArguments';
-    rethrow(err);
-end
-
-if (nargin ~= 5)
-    err.message = 'getExperimentsWeb usage: expArray = getExperimentsWeb(cgiurl, instCodeArray, starttime, endtime, localFlag)';
-    err.identifier = 'madmatlab:badArguments';
-    rethrow(err);
+arguments
+    cgiurl (1,1) string
+    instCodeArray (1,:) {mustBeInteger}
+    starttime (1,1) datetime
+    endtime (1,1) datetime
+    localFlag (1,1) {mustBeInteger}
+    timeout (1,1) = 15.0
 end
 
 % we first need to call getMetadata to create a dictionary of siteIds and
 % Urls - form will be cell array where each cell is a cell array of two
 % items, the siteId and the main site url
 siteDict = {};
-siteUrl = strcat(cgiurl, '/getMetadata?fileType=5');
+siteUrl = cgiurl + "/getMetadata?fileType=5";
 % now get that url
-these_options = weboptions('Timeout',300, 'ContentType', 'text');
+these_options = weboptions('Timeout',timeout, 'ContentType', 'text');
 result = webread(siteUrl, these_options);
 
 % surpress matlab warning about multibyte Characters
