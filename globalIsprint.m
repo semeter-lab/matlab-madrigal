@@ -96,55 +96,48 @@ function [] = globalIsprint(url, ...
 %
 %  $Id: globalIsprint.m 6811 2019-03-28 19:13:46Z brideout $
 %
-
-if (nargin < 10)
-    format = '';
+arguments
+    url (1,1) string
+    parms (1,1) string
+    output (1,1) string
+    user_fullname (1,1) string
+    user_email (1,1) string
+    user_affiliation (1,1) string
+    startTime (1,1) datetime
+    endTime (1,1) datetime
+    inst (1,1) {mustBeInteger}
+    format (1,1) string = ""
+    filters (1,1) string = ""
+    kindats (1,:) = []
+    expName (1,1) string = ""
+    fileDesc (1,1) string = ""
+    excludeExpName (1,1) string = ""
 end
 
-if (nargin < 11)
-    filters = '';
-end
-
-if (nargin < 12)
-    kindats = [];
-end
-
-if (nargin < 13)
-    expName = '';
-end
-
-if (nargin < 14)
-    fileDesc = [];
-end
-
-if (nargin < 15)
-    excludeExpName = '';
-end
 
 cgiurl = getMadrigalCgiUrl(url);
 
 % verify valid format
-if (strcmp(format, ''))
-    if (isdir(output))
-        exception = MException('Madmatlab:GlobalIsprintFailed', ...
-       'If no format, then output must be a file, not a directory');
-        throw(exception);
-    end
-elseif (strcmp(format, 'Hdf5') | strcmp(format, 'netCDF4'))
-    version = getVersion(cgiurl);
-    items = strsplit(version, '.');
-    majorRelease = str2num(char(items(1)));
-    if (majorRelease < 3)
-        error('You can only request data in Hdf5 or netCDF4 format if the Madrigal site is 3.0 or later');
-    end
-    if (~isdir(output))
-        error('If format set, then output %s must be a directory', output)
-    end
-elseif (strcmp(format, 'ascii'))
-    if (~isdir(output))
-        error('If format set, then output %s must be a directory', output)
-    end
-else
+switch format
+    case ""
+        if isfolder(output)
+            error('Madmatlab:GlobalIsprintFailed', 'If no format, then output must be a file, not a directory')
+        end
+    case ["Hdf5", "netCDF4"]
+        version = getVersion(cgiurl);
+        items = strsplit(version, '.');
+        majorRelease = str2double(char(items(1)));
+        if (majorRelease < 3)
+            error('You can only request data in Hdf5 or netCDF4 format if the Madrigal site is 3.0 or later');
+        end
+        if (~isfolder(output))
+            error('If format set, then output %s must be a directory', output)
+        end
+    case "ascii"
+        if (~isfolder(output))
+            error('If format set, then output %s must be a directory', output)
+        end
+    otherwise
     error('Unknown format: %s', format);
 end
 
@@ -160,9 +153,7 @@ filters = [filters, timeFiltStr1, timeFiltStr2];
 
 expArray = getExperimentsWeb(cgiurl, inst, startTime, endTime, 1);
 if (isempty(expArray))
-    exception = MException('Madmatlab:NoExperimentsFound', ...
-       'No experiments found for these arguments');
-    throw(exception);
+    error('Madmatlab:NoExperimentsFound', 'No experiments found for these arguments')
 end
 
 if (strcmp(format, ''))
@@ -173,18 +164,18 @@ end
 for i = 1:length(expArray)
 
     % expName filter, if any
-    if (length(expName) > 0)
-        result = regexpi(expArray(i).name, expName);
-        if (length(result) == 0)
+    if ~isempty(expName)
+        result = regexpi(expArray(i).name, expName, 'once');
+        if isempty(result)
             continue;
         end
     end
 
     % excludeExpName filter, if any
-    if (length(excludeExpName) > 0)
-        result = regexpi(expArray(i).name, excludeExpName);
-        if (length(result) ~= 0)
-            continue;
+    if ~isempty(excludeExpName)
+        result = regexpi(expArray(i).name, excludeExpName, 'once');
+        if ~isempty(result)
+            continue
         end
     end
 
@@ -196,7 +187,7 @@ for i = 1:length(expArray)
          end
 
          % kindat filter
-         if (length(kindats) > 0)
+         if ~isempty(kindats)
              okay = 0;
              for k = 1:length(kindats)
                  if (expFileArray(j).kindat == kindats(k))
@@ -210,9 +201,9 @@ for i = 1:length(expArray)
          end
 
          % fileDesc filter, if any
-         if (length(fileDesc) > 0)
-             result = regexpi(expFileArray(j).status, fileDesc);
-             if (length(result) == 0)
+         if ~isempty(fileDesc)
+             result = regexpi(expFileArray(j).status, fileDesc, 'once');
+             if isempty(result)
                  continue;
              end
          end
@@ -243,14 +234,14 @@ for i = 1:length(expArray)
                      dataOkay = 1;
                      for i2 = 1:dataLens(2)
                          % skip time NaN
-                 if ((i2 == 1) && (isnan(data(i1,i2,i3))))
-                     dataOkay = 0;
-                     break;
-                 end
-                 if (dataOkay == 1)
+                         if ((i2 == 1) && (isnan(data(i1,i2,i3))))
+                             dataOkay = 0;
+                             break;
+                         end
+                         if (dataOkay == 1)
                              fprintf(fid, '%g ', data(i1,i2,i3));
                          end
-                     end
+                    end
                      % end of line
                      if (dataOkay == 1)
                          fprintf(fid, '\n ');
@@ -264,7 +255,7 @@ for i = 1:length(expArray)
 
 end % experiment loop
 
-if (strcmp(format, ''))
+if strlength(format) == 0
     fclose(fid);
 end
 end
@@ -274,17 +265,14 @@ function outputFile = getOutputFile(fullFilename, format, output)
 %   fullFilename - full path to file on Madrigal server
 %   format - either '', 'Hdf5', 'netCDF4', or 'ascii'
 %   output - directory to put files in
-if (strcmp(format, ''))
-    outputFile = '';
+if strlength(format) == 0
+    outputFile = "";
     return
 end
-[pathstr,name,ext] = fileparts(fullFilename);
-if (strcmp(format, 'Hdf5'))
-    outputFile = fullfile(output,[name '.hdf5']);
-elseif (strcmp(format, 'netCDF4'))
-    outputFile = fullfile(output,[name '.nc']);
-else
-    outputFile = fullfile(output,[name '.txt']);
+[~,name,~] = fileparts(fullFilename);
+switch format
+    case 'Hdf5', outputFile = fullfile(output, name + ".hdf5");
+    case 'netCDF4', outputFile = fullfile(output, name + ".nc");
+    otherwise, outputFile = fullfile(output, name + ".txt");
 end
-return
 end
