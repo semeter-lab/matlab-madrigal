@@ -100,16 +100,16 @@ for line = 1:length(lineMarks)
     commaMarks = strfind(thisLine, ',');
 
     % id
-    id = str2num(thisLine(1:commaMarks(1)-1));
+    id = str2double(thisLine(1:commaMarks(1)-1));
     % name
-    name = thisLine(commaMarks(1)+1:commaMarks(2)-1);
+    % name = thisLine(commaMarks(1)+1:commaMarks(2)-1);
     % url
     url = thisLine(commaMarks(2)+1:commaMarks(3)-1);
     % url2
     url2 = thisLine(commaMarks(3)+1:commaMarks(4)-1);
 
     % append new data
-    siteDict = [ siteDict {id, strcat('http://', url, '/', url2) }];
+    siteDict = [ siteDict {id, "http://" + url + "/" + url2 }];
 end
 
 
@@ -119,59 +119,43 @@ cgiurl = strcat(cgiurl, 'getExperimentsService.py?');
 
 % append --code options
 for i = 1:length(instCodeArray)
-    [temp  errmsp] = sprintf('code=%i&', instCodeArray(i));
-    cgiurl = strcat(cgiurl, temp);
+    cgiurl = cgiurl + sprintf('code=%i&', instCodeArray(i));
 end
 
 % append start time
 startTimeVec = datevec(starttime);
-[temp  errmsp] = sprintf('startyear=%i&', startTimeVec(1));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('startmonth=%i&', startTimeVec(2));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('startday=%i&', startTimeVec(3));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('starthour=%i&', startTimeVec(4));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('startmin=%i&', startTimeVec(5));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('startsec=%i&', round(startTimeVec(6)));
-cgiurl = strcat(cgiurl, temp);
+cgiurl = cgiurl + sprintf('startyear=%i&', startTimeVec(1));
+cgiurl = cgiurl + sprintf('startmonth=%i&', startTimeVec(2));
+cgiurl = cgiurl + sprintf('startday=%i&', startTimeVec(3));
+cgiurl = cgiurl + sprintf('starthour=%i&', startTimeVec(4));
+cgiurl = cgiurl + sprintf('startmin=%i&', startTimeVec(5));
+cgiurl = cgiurl + sprintf('startsec=%i&', round(startTimeVec(6)));
 
 % append end time
 endTimeVec = datevec(endtime);
-[temp  errmsp] = sprintf('endyear=%i&', endTimeVec(1));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('endmonth=%i&', endTimeVec(2));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('endday=%i&', endTimeVec(3));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('endhour=%i&', endTimeVec(4));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('endmin=%i&', endTimeVec(5));
-cgiurl = strcat(cgiurl, temp);
-[temp  errmsp] = sprintf('endsec=%i&', round(endTimeVec(6)));
-cgiurl = strcat(cgiurl, temp);
+cgiurl = cgiurl + sprintf('endyear=%i&', endTimeVec(1));
+cgiurl = cgiurl + sprintf('endmonth=%i&', endTimeVec(2));
+cgiurl = cgiurl + sprintf('endday=%i&', endTimeVec(3));
+cgiurl = cgiurl + sprintf('endhour=%i&', endTimeVec(4));
+cgiurl = cgiurl + sprintf('endmin=%i&', endTimeVec(5));
+cgiurl = cgiurl + sprintf('endsec=%i&', round(endTimeVec(6)));
 
 % append localFlag
 if localFlag == 0
-    cgiurl = strcat(cgiurl, 'local=0');
+    cgiurl = cgiurl + "local=0";
 else
-    cgiurl = strcat(cgiurl, 'local=1');
+    cgiurl = cgiurl + "local=1";
 end
 
 % make sure any + replaced by %2B
 cgiurl = strrep(cgiurl,'+','%2B');
 
 % now get that url
-result = urlread(cgiurl);
+result = webread(cgiurl);
 
 % look for errors - if html returned, error occurred
-htmlList = strfind(result, '</html>');
-if (~isempty(htmlList))
-    err.message = strcat('Unable to run cgi script getExperimentsWeb using cgiurl: - ', cgiurl);
-    err.identifier = 'madmatlab:scriptError';
-    rethrow(err);
+if contains(result, '</html>')
+    error('madmatlab:scriptError', "Unable to run cgi script getExperimentsWeb using cgiurl: %s ", cgiurl)
 end
 
 result = sprintf('%s\n', result);
@@ -192,54 +176,54 @@ for line = 1:length(lineMarks)
     end
     commaMarks = strfind(thisLine, ',');
     % id
-    newExperiment.id = str2num(thisLine(1:commaMarks(1)-1));
+    newExperiment.id = str2double(thisLine(1:commaMarks(1)-1));
     % url
     newExperiment.url = thisLine(commaMarks(1)+1:commaMarks(2)-1);
     % name
     newExperiment.name = thisLine(commaMarks(2)+1:commaMarks(3)-1);
     % siteid
-    newExperiment.siteid = str2num(thisLine(commaMarks(3)+1:commaMarks(4)-1));
+    newExperiment.siteid = str2double(thisLine(commaMarks(3)+1:commaMarks(4)-1));
     % site name
     newExperiment.sitename = thisLine(commaMarks(4)+1:commaMarks(5)-1);
     % instcode
-    newExperiment.instcode = str2num(thisLine(commaMarks(5)+1:commaMarks(6)-1));
+    newExperiment.instcode = str2double(thisLine(commaMarks(5)+1:commaMarks(6)-1));
     % inst name
     newExperiment.instname = thisLine(commaMarks(6)+1:commaMarks(7)-1);
     % get starttime
     % year
-    year = str2num(thisLine(commaMarks(7)+1:commaMarks(8)-1));
+    year = str2double(thisLine(commaMarks(7)+1:commaMarks(8)-1));
     % month
-    month = str2num(thisLine(commaMarks(8)+1:commaMarks(9)-1));
+    month = str2double(thisLine(commaMarks(8)+1:commaMarks(9)-1));
     % day
-    day = str2num(thisLine(commaMarks(9)+1:commaMarks(10)-1));
+    day = str2double(thisLine(commaMarks(9)+1:commaMarks(10)-1));
     % hour
-    hour = str2num(thisLine(commaMarks(10)+1:commaMarks(11)-1));
+    hour = str2double(thisLine(commaMarks(10)+1:commaMarks(11)-1));
     % minute
-    minute = str2num(thisLine(commaMarks(11)+1:commaMarks(12)-1));
+    minute = str2double(thisLine(commaMarks(11)+1:commaMarks(12)-1));
     % second
-    second = str2num(thisLine(commaMarks(12)+1:commaMarks(13)-1));
+    second = str2double(thisLine(commaMarks(12)+1:commaMarks(13)-1));
     % create starttime
-    newExperiment.starttime = datenum([year month day hour minute second]);
+    newExperiment.starttime = datetime(year, month, day, hour, minute, second);
     % get endtime
     % year
-    year = str2num(thisLine(commaMarks(13)+1:commaMarks(14)-1));
+    year = str2double(thisLine(commaMarks(13)+1:commaMarks(14)-1));
     % month
-    month = str2num(thisLine(commaMarks(14)+1:commaMarks(15)-1));
+    month = str2double(thisLine(commaMarks(14)+1:commaMarks(15)-1));
     % day
-    day = str2num(thisLine(commaMarks(15)+1:commaMarks(16)-1));
+    day = str2double(thisLine(commaMarks(15)+1:commaMarks(16)-1));
     % hour
-    hour = str2num(thisLine(commaMarks(16)+1:commaMarks(17)-1));
+    hour = str2double(thisLine(commaMarks(16)+1:commaMarks(17)-1));
     % min
-    minute = str2num(thisLine(commaMarks(17)+1:commaMarks(18)-1));
+    minute = str2double(thisLine(commaMarks(17)+1:commaMarks(18)-1));
     % sec
-    second = str2num(thisLine(commaMarks(18)+1:commaMarks(19)-1));
+    second = str2double(thisLine(commaMarks(18)+1:commaMarks(19)-1));
     % create endtime
     newExperiment.endtime = datenum([year month day hour minute second]);
     % finally, isLocal - may or may not be last
     if length(commaMarks) > 19
-        newExperiment.isLocal = str2num(thisLine(commaMarks(19)+1:commaMarks(20)-1));
+        newExperiment.isLocal = str2double(thisLine(commaMarks(19)+1:commaMarks(20)-1));
     else
-        newExperiment.isLocal = str2num(thisLine(commaMarks(19)+1:end));
+        newExperiment.isLocal = str2double(thisLine(commaMarks(19)+1:end));
     end
 
     if (newExperiment.isLocal == 0)
