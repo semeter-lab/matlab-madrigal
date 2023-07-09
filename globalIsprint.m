@@ -150,7 +150,7 @@ if isempty(expArray)
     error('Madmatlab:NoExperimentsFound', 'No experiments found for these arguments')
 end
 
-if (strcmp(format, ''))
+if strlength(format) == 0
     fid = fopen(output, 'w');
 end
 
@@ -158,7 +158,7 @@ end
 for i = 1:length(expArray)
 
     % expName filter, if any
-    if ~isempty(expName)
+    if strlength(expName) > 0
         result = regexpi(expArray(i).name, expName, 'once');
         if isempty(result)
             continue;
@@ -166,7 +166,7 @@ for i = 1:length(expArray)
     end
 
     % excludeExpName filter, if any
-    if ~isempty(excludeExpName)
+    if strlength(excludeExpName) > 0
         result = regexpi(expArray(i).name, excludeExpName, 'once');
         if ~isempty(result)
             continue

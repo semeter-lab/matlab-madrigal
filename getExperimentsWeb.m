@@ -65,6 +65,7 @@ siteDict = {};
 siteUrl = cgiurl + "/getMetadata?fileType=5";
 % now get that url
 these_options = weboptions('Timeout',timeout, 'ContentType', 'text');
+disp(siteUrl)
 result = webread(siteUrl, these_options);
 
 % surpress matlab warning about multibyte Characters
@@ -78,12 +79,12 @@ for i = 1:length(lines)
     if strlength(lines(i)) < 10
         continue
     end
-    dat = split(lines(i), ",");
+    line = split(lines(i), ",");
 
-    id = str2double(dat(1));
+    id = str2double(line(1));
     % name = dat(2);
-    url = dat(3);
-    url2 = dat(4);
+    url = line(3);
+    url2 = line(4);
 
     % append new data
     siteDict = [ siteDict {id, "http://" + url + "/" + url2 }];
@@ -118,6 +119,7 @@ end
 cgiurl = strrep(cgiurl, "+", "%2B");
 
 % now get that url
+disp(cgiurl)
 result = webread(cgiurl);
 
 % look for errors - if html returned, error occurred
@@ -125,71 +127,37 @@ if strlength(result) == 0 || contains(result, "</html>")
     error('madmatlab:scriptError', "Unable to run cgi script getExperimentsWeb using cgiurl: %s ", cgiurl)
 end
 
-% parse result
-lineMarks = regexp(result, '\n');
+%% parse result
 % init array to return
 expArray = [];
+
+lines = split(string(result), newline);
 % loop through each line
-for line = 1:length(lineMarks)
-    if line == 1
-        thisLine = result(1:lineMarks(line));
-    else
-         thisLine = result(lineMarks(line-1):lineMarks(line));
-    end
-    if length(thisLine) < 10
+for i = 1:length(lines)
+    if strlength(lines(i)) < 10
         continue
     end
-    commaMarks = strfind(thisLine, ',');
+    line = split(lines(i), ",");
     % id
-    newExperiment.id = str2double(thisLine(1:commaMarks(1)-1));
+    newExperiment.id = str2double(line(1));
     % url
-    newExperiment.url = thisLine(commaMarks(1)+1:commaMarks(2)-1);
+    newExperiment.url = line(2);
     % name
-    newExperiment.name = thisLine(commaMarks(2)+1:commaMarks(3)-1);
+    newExperiment.name = line(3);
     % siteid
-    newExperiment.siteid = str2double(thisLine(commaMarks(3)+1:commaMarks(4)-1));
+    newExperiment.siteid = str2double(line(4));
     % site name
-    newExperiment.sitename = thisLine(commaMarks(4)+1:commaMarks(5)-1);
+    newExperiment.sitename = line(5);
     % instcode
-    newExperiment.instcode = str2double(thisLine(commaMarks(5)+1:commaMarks(6)-1));
+    newExperiment.instcode = str2double(line(6));
     % inst name
-    newExperiment.instname = thisLine(commaMarks(6)+1:commaMarks(7)-1);
+    newExperiment.instname = line(7);
     % get starttime
-    % year
-    year = str2double(thisLine(commaMarks(7)+1:commaMarks(8)-1));
-    % month
-    month = str2double(thisLine(commaMarks(8)+1:commaMarks(9)-1));
-    % day
-    day = str2double(thisLine(commaMarks(9)+1:commaMarks(10)-1));
-    % hour
-    hour = str2double(thisLine(commaMarks(10)+1:commaMarks(11)-1));
-    % minute
-    minute = str2double(thisLine(commaMarks(11)+1:commaMarks(12)-1));
-    % second
-    second = str2double(thisLine(commaMarks(12)+1:commaMarks(13)-1));
-    % create starttime
-    newExperiment.starttime = datetime(year, month, day, hour, minute, second);
+    newExperiment.starttime = datetime(str2double(line(8)), str2double(line(9)), str2double(line(10)), str2double(line(11)), str2double(line(12)), str2double(line(13)));
     % get endtime
-    % year
-    year = str2double(thisLine(commaMarks(13)+1:commaMarks(14)-1));
-    % month
-    month = str2double(thisLine(commaMarks(14)+1:commaMarks(15)-1));
-    % day
-    day = str2double(thisLine(commaMarks(15)+1:commaMarks(16)-1));
-    % hour
-    hour = str2double(thisLine(commaMarks(16)+1:commaMarks(17)-1));
-    % min
-    minute = str2double(thisLine(commaMarks(17)+1:commaMarks(18)-1));
-    % sec
-    second = str2double(thisLine(commaMarks(18)+1:commaMarks(19)-1));
-    % create endtime
-    newExperiment.endtime = datenum([year month day hour minute second]);
+    newExperiment.endtime = datetime(str2double(line(14)), str2double(line(15)), str2double(line(16)), str2double(line(17)), str2double(line(18)), str2double(line(19)));
     % finally, isLocal - may or may not be last
-    if length(commaMarks) > 19
-        newExperiment.isLocal = str2double(thisLine(commaMarks(19)+1:commaMarks(20)-1));
-    else
-        newExperiment.isLocal = str2double(thisLine(commaMarks(19)+1:end));
-    end
+    newExperiment.isLocal = str2double(line(20));
 
     if (newExperiment.isLocal == 0)
         newExperiment.id = -1;
@@ -203,40 +171,36 @@ for line = 1:length(lineMarks)
         end
     end
 
-    if length(commaMarks) > 20
-        newExperiment.PI = thisLine(commaMarks(20)+1:commaMarks(21)-1);
+    if length(line) > 20
+        newExperiment.PI = line(21);
     else
         newExperiment.PI = 'Unknown';
     end
 
-    if length(commaMarks) > 21
-        newExperiment.PIEmail = thisLine(commaMarks(21)+1:commaMarks(22)-1);
-    elseif length(commaMarks) == 21
-        newExperiment.PIEmail = thisLine(commaMarks(21)+1:end-1);
+    if length(line) >= 21
+        newExperiment.PIEmail = line(22);
     else
         newExperiment.PIEmail = 'Unknown';
     end
 
     % realUrl
     realUrl = newExperiment.url;
-    realUrl = strrep(realUrl, '/madtoc/', '/madExperiment.cgi?exp=');
-    title = strrep(newExperiment.name, ' ', '+');
-    realUrl = strcat(realUrl, '&displayLevel=0&expTitle=', title);
-    newExperiment.realUrl = realUrl;
-
-
+    realUrl = strrep(realUrl, "/madtoc/", "/madExperiment.cgi?exp=");
+    title = strrep(newExperiment.name, " ", "+");
+    newExperiment.realUrl = realUrl + "&displayLevel=0&expTitle=" + title;
 
     % append new experiments
     expArray = [expArray newExperiment];
 
-% now sort the array based on http://blogs.mathworks.com/pick/2010/09/17/sorting-structure-arrays-based-on-fields/
-expArrayFields = fieldnames(expArray);
-expArrayCell = struct2cell(expArray);
-sz = size(expArrayCell);
-expArrayCell = reshape(expArrayCell, sz(1), []);
-expArrayCell = expArrayCell';
-expArrayCell = sortrows(expArrayCell, 8);
-expArrayCell = reshape(expArrayCell', sz);
-expArray = cell2struct(expArrayCell, expArrayFields, 1);
+% now sort the array based on
+% http://blogs.mathworks.com/pick/2010/09/17/sorting-structure-arrays-based-on-fields/
+% expArrayFields = fieldnames(expArray);
+% expArrayCell = struct2cell(expArray);
+% sz = size(expArrayCell);
+% expArrayCell = reshape(expArrayCell, sz(1), []);
+% expArrayCell = expArrayCell';
+% expArrayCell = sortrows(expArrayCell, 8);
+% expArrayCell = reshape(expArrayCell', sz);
+% expArray = cell2struct(expArrayCell, expArrayFields, 1);
 
 end
