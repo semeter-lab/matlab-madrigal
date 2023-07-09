@@ -128,7 +128,7 @@ else
 end
 
 wget_command = "wget -q --timeout=600 --tries=1 -O " + outputFile + ' "' + cgiUrl + '"';
-curl_command = "curl --connect-timeout 10 --max-time 600 --retry 1 -L --output " + outputFile + ' "' + cgiUrl + '"';
+curl_command = "curl --connect-timeout 10 --max-time 600 --speed-limit 100000 --speed-time 30 --retry 1 -L --output " + outputFile + ' "' + cgiUrl + '"';
 
 % try to download
 disp(curl_command)
