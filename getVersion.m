@@ -16,22 +16,18 @@ function version = getVersion(cgiurl)
 % Written by Bill Rideout (brideout@haystack.mit.edu)
 %  $Id: getVersion.m 5818 2016-09-23 20:08:37Z brideout $
 
-% deal with arguments
-
-if (nargin ~= 1)
-    error('Usage: version = getVersion(cgiurl)');
+arguments
+    cgiurl (1,1) string
 end
 
 % build the complete cgi string
-cgiurl = strcat(cgiurl, 'getVersionService.py');
+cgiurl = cgiurl + "getVersionService.py";
 
 % make sure any + replaced by %2B
-cgiurl = strrep(cgiurl,'+','%2B');
+cgiurl = strrep(cgiurl, "+", "%2B");
 
 % now get that url
-try
-    these_options = weboptions('Timeout',300, 'ContentType', 'text');
-    version = webread(cgiurl, these_options);
-catch
-    version = '2.5';
+these_options = weboptions('ContentType', 'text');
+version = webread(cgiurl, these_options);
+
 end

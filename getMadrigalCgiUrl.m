@@ -8,29 +8,36 @@ function cgiUrl = getMadrigalCgiUrl(url)
 %  output: cgi url for that Madrigal Site
 %
 %  Note: parses the homepage for the accessData link
+arguments
+  url (1,1) string
+end
 
 % get main page
-if url(end) ~= '/'
-    result = findstr(url, 'index.html');
-    if length(result) == 0
-        url = strcat(url,'/');
-    end
+if ~any(endsWith(url, ["/", "index.html"]))
+  url = url + "/";
 end
-these_options = weboptions('Timeout',300, 'ContentType', 'text');
+
+these_options = weboptions('ContentType', 'text');
 pagedata = webread(url, these_options);
 
 % get host name
-if strncmp(url,'http:',5), url=url(6:end); end
-if strncmp(url,'//',2),    url=url(3:end); end
-[host,page]=strtok(url,'/');
-[host,port]=strtok(host,':');
+if startsWith(url, "http://")
+    url = extractAfter(url, 7);
+end
+if startsWith(url, "https://")
+    url = extractAfter(url, 8);
+end
+host = strtok(url,'/');
+[host, port] = strtok(host,':');
 
 index1 = regexp(pagedata, '[^"]*accessData.cgi');
 % check for error
-if length(index1) == 0
+if isempty(index1)
     err.message = 'No Madrigal home page found at given url';
     err.identifier = 'madmatlab:badArguments';
     rethrow(err);
 end
 index2 = regexp(pagedata, 'accessData.cgi');
-cgiUrl = strcat('http://', host, port, pagedata(index1:index2-1));
+cgiUrl = "http://" +  host + port + pagedata(index1:index2-1);
+
+end
