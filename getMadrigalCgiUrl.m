@@ -1,15 +1,16 @@
-function cgiUrl = getMadrigalCgiUrl(url)
+function cgiUrl = getMadrigalCgiUrl(url, timeout)
 %  getMadrigalCgiUrl  	parse the main madrigal page to get the cgi url
 %
 %  With Madrigal 3, this method simply returns the original url.
 %
-%  input: url to Madrigal
+%  input: url to Madrigal, timeout (seconds)
 %
 %  output: cgi url for that Madrigal Site
 %
 %  Note: parses the homepage for the accessData link
 arguments
   url (1,1) string
+  timeout (1,1) {mustBePositive} = 15.0
 end
 
 % get main page
@@ -17,7 +18,7 @@ if ~any(endsWith(url, ["/", "index.html"]))
   url = url + "/";
 end
 
-these_options = weboptions('ContentType', 'text');
+these_options = weboptions(Timeout=timeout, ContentType="text");
 pagedata = webread(url, these_options);
 
 % get host name

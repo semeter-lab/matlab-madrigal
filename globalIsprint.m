@@ -12,7 +12,8 @@ function [] = globalIsprint(url, ...
     kindats, ...
     expName, ...
     fileDesc, ...
-    excludeExpName)
+    excludeExpName, ...
+    timeout)
 % globalIsprint is a script to search through the entire Madrigal database
 % for appropriate data to print in ascii to a file
 %
@@ -112,31 +113,24 @@ arguments
     expName (1,1) string = ""
     fileDesc (1,1) string = ""
     excludeExpName (1,1) string = ""
+    timeout (1,1) {mustBePositive} = 15.0
 end
 
 
-cgiurl = getMadrigalCgiUrl(url);
+cgiurl = getMadrigalCgiUrl(url, timeout);
 
 % verify valid format
-switch format
+switch lower(format)
     case ""
-        if isfolder(output)
-            error('Madmatlab:GlobalIsprintFailed', 'If no format, then output must be a file, not a directory')
-        end
-    case ["Hdf5", "netCDF4"]
+        assert(~isfolder(output), 'If no format, then output must be a file, not a directory')
+    case {"hdf5", "netcdf4"}
         version = getVersion(cgiurl);
         items = strsplit(version, '.');
         majorRelease = str2double(char(items(1)));
-        if (majorRelease < 3)
-            error('You can only request data in Hdf5 or netCDF4 format if the Madrigal site is 3.0 or later');
-        end
-        if (~isfolder(output))
-            error('If format set, then output %s must be a directory', output)
-        end
+        assert(majorRelease >= 3, "Hdf5 or netCDF4 format requires Madrigal site  3.0 or later")
+        assert(isfolder(output), "If format set, then output %s must be a directory", output)
     case "ascii"
-        if (~isfolder(output))
-            error('If format set, then output %s must be a directory', output)
-        end
+        assert(isfolder(output), "If format set, then output %s must be a directory", output)
     otherwise
     error('Unknown format: %s', format);
 end
@@ -152,7 +146,7 @@ timeFiltStr2 = sprintf(' date2=%02i/%02i/%04i time2=%02i:%02i:%02i ', ...
 filters = [filters, timeFiltStr1, timeFiltStr2];
 
 expArray = getExperimentsWeb(cgiurl, inst, startTime, endTime, 1);
-if (isempty(expArray))
+if isempty(expArray)
     error('Madmatlab:NoExperimentsFound', 'No experiments found for these arguments')
 end
 

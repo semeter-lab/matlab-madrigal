@@ -1,4 +1,4 @@
-function version = getVersion(cgiurl)
+function version = getVersion(cgiurl, timeout)
 %  getVersion  	returns a a string representing the Madrigal version
 %
 %  inputs:  cgiurl (string) to Madrigal site cgi directory
@@ -18,6 +18,7 @@ function version = getVersion(cgiurl)
 
 arguments
     cgiurl (1,1) string
+    timeout (1,1) {mustBePositive} = 15.0
 end
 
 % build the complete cgi string
@@ -27,7 +28,7 @@ cgiurl = cgiurl + "getVersionService.py";
 cgiurl = strrep(cgiurl, "+", "%2B");
 
 % now get that url
-these_options = weboptions('ContentType', 'text');
+these_options = weboptions(Timeout=timeout, ContentType="text");
 version = webread(cgiurl, these_options);
 
 end
