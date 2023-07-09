@@ -55,52 +55,25 @@ function records = isprintWeb(cgiUrl, file, parms, user_fullname, user_email, us
 %   Requires wget.
 %
 %    $Id: isprintWeb.m 6811 2019-03-28 19:13:46Z brideout $
-
-% constant
-maxRecs = 1000;
-maxCalls = 500;
-
-% defaults
-missingValue = NaN;
-assumedValue = NaN;
-knownbadValue = NaN;
-
-
-if (nargin < 6)
-    error('Usage: [records] = isprintWeb(url, file, parms, user_fullname, user_email, user_affiliation, [filters, [missing, [assumed, [knownbad] ] ] ])');
-end
-if (nargin < 7)
-    filters = '';
-end
-if (nargin < 8)
-    outputFile = '';
-end
-if (nargin < 9)
-    missing = missingValue;
-end
-if (nargin < 10)
-    assumed = assumedValue;
-end
-if (nargin < 11)
-    knownbad = knownbadValue;
+arguments
+    cgiUrl (1,1) string
+    file (1,1) string
+    parms (1,1) string
+    user_fullname (1,1) string
+    user_email (1,1) string
+    user_affiliation (1,1) string
+    filters (1,1) string = ""
+    outputFile (1,1) string = ""
+    missing (1,1) {mustBeNumeric} = NaN
+    assumed (1,1) {mustBeNumeric} = NaN
+    knownbad (1,1) {mustBeNumeric} = NaN
 end
 
-% verify user entered doubles for missing, assumed, knownbad
-if (strcmp(class(missing), 'char'))
-    error('missing must be a float or NaN, not a string')
-end
-if (strcmp(class(assumed), 'char'))
-    error('assumed must be a float or NaN, not a string')
-end
-if (strcmp(class(knownbad), 'char'))
-    error('knownbad must be a float or NaN, not a string')
-end
-
-if (length(outputFile) > 1)
-    [pathstr,name,ext] = fileparts(outputFile);
-    if (strcmp(ext, '.h5') | strcmp(ext, '.hdf5') | strcmp(ext, '.hdf'))
+if strlength(outputFile) > 1
+    [~,~,ext] = fileparts(outputFile);
+    if any(endsWith(ext, [".h5", ".hdf5", ".hdf"]))
         format = 'Hdf5';
-    elseif (strcmp(ext, '.nc'))
+    elseif endsWith(ext, ".nc")
         format = 'netCDF4';
     else
         format = 'ascii';
@@ -109,16 +82,6 @@ if (length(outputFile) > 1)
 else
     format = 'ascii';
     useStdOut = 1;
-end
-
-if (strcmp(format, 'Hdf5') | strcmp(format, 'netCDF4'))
-    % we need to verify its Madrigal 3 at least
-    version = getVersion(cgiUrl);
-    items = strsplit(version, '.');
-    majorRelease = str2num(char(items(1)));
-    if (majorRelease < 3)
-        error('You can only request data in Hdf5 or netCDF4 format if the Madrigal site is 3.0 or later');
-    end
 end
 
 % Use wget only

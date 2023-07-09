@@ -143,7 +143,7 @@ timeFiltStr1 = sprintf(' date1=%02i/%02i/%04i time1=%02i:%02i:%02i ', ...
 timeFiltStr2 = sprintf(' date2=%02i/%02i/%04i time2=%02i:%02i:%02i ', ...
     etVec(2), etVec(3), etVec(1), etVec(4), etVec(5), round(etVec(6)));
 
-filters = [filters, timeFiltStr1, timeFiltStr2];
+filters = filters + timeFiltStr1 + timeFiltStr2;
 
 expArray = getExperimentsWeb(cgiurl, inst, startTime, endTime, 1);
 if isempty(expArray)
@@ -216,7 +216,7 @@ for i = 1:height(expArray)
          end
 
          % this code needed only if not writing individual files
-         if (strcmp(format, ''))
+         if strlength(format) > 0
              dataLens = size(data);
 
              if (length(dataLens) < 3)
